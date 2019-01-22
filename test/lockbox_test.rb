@@ -71,6 +71,19 @@ class LockboxTest < Minitest::Test
     end
   end
 
+  def test_public_key
+    skip if travis?
+
+    key_pair = Lockbox.generate_key_pair
+
+    box = Lockbox.new(public_key: key_pair[:public_key])
+    message = "it works!" * 10000
+    ciphertext = box.encrypt(message)
+
+    box = Lockbox.new(private_key: key_pair[:private_key])
+    assert_equal message, box.decrypt(ciphertext)
+  end
+
   def test_bad_algorithm
     error = assert_raises(ArgumentError) do
       Lockbox.new(key: random_key, algorithm: "bad")

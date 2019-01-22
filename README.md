@@ -174,6 +174,43 @@ Lockbox.default_options = {algorithm: "xchacha20"}
 
 You can also pass an algorithm to `previous_versions` for key rotation.
 
+## Hybrid Cryptography [master]
+
+[Hybrid cryptography](https://en.wikipedia.org/wiki/Hybrid_cryptosystem) allows servers to encrypt data without being able to decrypt it.
+
+[Install Libsodium](https://github.com/crypto-rb/rbnacl/wiki/Installing-libsodium) and add [rbnacl](https://github.com/crypto-rb/rbnacl) to your application’s Gemfile:
+
+```ruby
+gem 'rbnacl'
+```
+
+Generate a key pair with:
+
+```ruby
+Lockbox.generate_key_pair
+```
+
+Store the keys with your other secrets. To encrypt, pass the `public_key` option.
+
+```ruby
+# files
+box = Lockbox.new(public_key: public_key)
+
+# Active Storage
+class User < ApplicationRecord
+  attached_encrypted :license, public_key: public_key
+end
+
+# CarrierWave
+class LicenseUploader < CarrierWave::Uploader::Base
+  encrypt public_key: public_key
+end
+```
+
+To decrypt, pass the `private_key` option. You can pass both options at once, but make sure `private_key` is `nil` on servers that shouldn’t decrypt.
+
+This uses X25519 for key exchange and XSalsa20-Poly1305 for encryption.
+
 ## Key Management
 
 You can use a key management service to manage your keys with [KMS Encrypted](https://github.com/ankane/kms_encrypted).

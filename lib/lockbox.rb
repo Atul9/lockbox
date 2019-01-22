@@ -16,15 +16,13 @@ class Lockbox
   end
   self.default_options = {algorithm: "aes-gcm"}
 
-  def initialize(key: nil, algorithm: nil, previous_versions: nil)
-    default_options = self.class.default_options
-    key ||= default_options[:key]
-    algorithm ||= default_options[:algorithm]
-    previous_versions ||= default_options[:previous_versions]
+  def initialize(**options)
+    options = self.class.default_options.merge(options)
+    previous_versions = options.delete(:previous_versions)
 
     @boxes =
-      [Box.new(key, algorithm: algorithm)] +
-      Array(previous_versions).map { |v| Box.new(v[:key], algorithm: v[:algorithm]) }
+      [Box.new(options)] +
+      Array(previous_versions).map { |v| Box.new(v) }
   end
 
   def encrypt(message, **options)
@@ -54,6 +52,15 @@ class Lockbox
         end
       end
     end
+  end
+
+  def self.generate_key_pair
+    require "rbnacl"
+    private_key = RbNaCl::PrivateKey.generate
+    {
+      private_key: private_key.to_bytes.unpack("H*").first,
+      public_key: private_key.public_key.to_bytes.unpack("H*").first
+    }
   end
 
   private
